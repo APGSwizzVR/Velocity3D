@@ -1,132 +1,35 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Velocity 3D</title>
-<style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#6ea0c8;font-family:Arial,sans-serif}canvas{display:block;width:100%;height:100%}#hud{position:fixed;inset:0;pointer-events:none;color:#fff;text-shadow:0 2px 5px #000}.top{position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;pointer-events:auto}.pill{background:#111b;color:white;border:1px solid #ffffff44;border-radius:12px;padding:10px 14px;backdrop-filter:blur(10px)}button{cursor:pointer}.speed{position:absolute;right:20px;bottom:15px;text-align:right}.speed b{font-size:58px}.controls{position:absolute;left:16px;bottom:16px;font-size:12px}.panel{display:none;position:fixed;inset:0;background:#0008;place-items:center;z-index:5}.box{background:#f5f5f7;color:#111;border-radius:20px;padding:24px;width:min(500px,88vw);box-shadow:0 20px 80px #000}.box button{border:0;border-radius:10px;padding:11px 15px;margin:5px;background:#ddd}.box .primary{background:#1677ff;color:#fff}.cargrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.cargrid button{margin:0}.error{position:fixed;inset:0;display:none;place-items:center;background:#111;color:#fff;z-index:20;padding:30px;text-align:center}
-</style></head><body>
-<div id="error" class="error"></div>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Velocity 3D</title><style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#6ea0c8;font-family:Arial,sans-serif}canvas{display:block;width:100%;height:100%}#hud{position:fixed;inset:0;pointer-events:none;color:#fff;text-shadow:0 2px 5px #000}.top{position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:auto}.pill{background:#111c;color:#fff;border:1px solid #fff4;border-radius:12px;padding:10px 14px;backdrop-filter:blur(8px)}button{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:#ddd;color:#111}.primary{background:#1677ff;color:#fff}.controls{position:absolute;left:16px;bottom:16px;font-size:12px}.speed{position:absolute;right:20px;bottom:15px;text-align:right}.speed b{font-size:58px}.panel{display:none;position:fixed;inset:0;background:#0008;place-items:center;z-index:5;pointer-events:auto}.box{background:#f5f5f7;color:#111;border-radius:20px;padding:24px;width:min(500px,88vw);box-shadow:0 20px 80px #000}.box button{margin:5px}.error{display:none;position:fixed;inset:0;z-index:20;background:#111;color:#fff;place-items:center;text-align:center;padding:30px}.error .box{background:#fff}</style></head><body>
+<div id="error" class="error"><div class="box"><h2>Game engine failed to load</h2><p id="errorText">Trying an alternate Three.js source...</p></div></div>
 <div id="hud"><div class="top"><div class="pill"><b id="carName">Ferrari SF90 Stradale</b><br><small>Basic Test Map</small></div><button class="pill" id="settings">Settings</button></div><div class="controls pill">W / S = throttle & brake &nbsp; A / D = steer &nbsp; R = reset &nbsp; ESC = settings</div><div class="speed"><b id="speed">0</b><small> KM/H</small></div></div>
-<div id="panel" class="panel"><div class="box"><h2>Settings</h2><p>Car</p><div class="cargrid" id="cars"></div><p>Map: Basic Test Circuit</p><button class="primary" id="resume">Resume</button><button id="reset">Reset Car</button></div></div>
+<div id="panel" class="panel"><div class="box"><h2>Settings</h2><p>Car</p><div id="cars"></div><p>Map: Basic Test Circuit</p><button class="primary" id="resume">Resume</button><button id="reset">Reset Car</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.180.0/build/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.180.0/three.min.js"></script>
 <script>
-(function(){
-"use strict";
-const error=document.getElementById("error");
-if(!window.THREE){error.style.display="grid";error.innerHTML="<div><h2>Three.js failed to load</h2><p>Refresh the page. If it persists, the browser/CDN is blocking the game engine.</p></div>";return;}
-const THREE=window.THREE;
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x79a9d1);
-scene.fog=new THREE.Fog(0x79a9d1,120,600);
-const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1000);
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth,innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.shadowMap.enabled=true;
-renderer.outputColorSpace=THREE.SRGBColorSpace;
-document.body.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xddeeff,0x334422,2.2));
-const sun=new THREE.DirectionalLight(0xffffff,3);
-sun.position.set(-100,180,100);sun.castShadow=true;scene.add(sun);
-
-const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.75});
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(700,700),mat(0x4d8245));
-ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
-
-// Simple rectangular circuit: this is deliberately basic for reliable collision testing.
-const road=new THREE.Mesh(new THREE.RingGeometry(115,165,4,1,Math.PI/4),mat(0x30343a));
-road.rotation.x=-Math.PI/2;road.rotation.z=Math.PI/4;road.position.y=.02;road.scale.set(1,.7,1);road.receiveShadow=true;scene.add(road);
-
-// Straight rectangular road segments give a clear playable map.
-function box(x,y,z,sx,sy,sz,c,shadow=true){const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mat(c));m.position.set(x,y,z);m.castShadow=shadow;m.receiveShadow=true;scene.add(m);return m;}
-box(0,.03,-115,330,.06,32,0x30343a,false);
-box(0,.03,115,330,.06,32,0x30343a,false);
-box(-115,.03,0,32,.06,230,0x30343a,false);
-box(115,.03,0,32,.06,230,0x30343a,false);
-
-// Collision walls around the circuit.
-const walls=[
-{x:0,z:-142,sx:340,sz:3},{x:0,z:142,sx:340,sz:3},
-{x:-132,z:0,sx:3,sz:280},{x:132,z:0,sx:3,sz:280}
-];
-walls.forEach(w=>box(w.x,1.8,w.z,w.sx,3,w.sz,0xe7e7e7));
-
-// Center grass island.
-box(0,.02,0,190,.04,190,0x46783f,false);
-for(let i=0;i<18;i++){
- const a=i/18*Math.PI*2,r=98;
- const t=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.6,8,8),mat(0x62452d));t.position.set(Math.cos(a)*r,4,Math.sin(a)*r);
- const c=new THREE.Mesh(new THREE.ConeGeometry(6,13,8),mat(0x1d5b32));c.position.set(t.position.x,10,t.position.z);t.castShadow=c.castShadow=true;scene.add(t,c);
-}
-
-// Start/finish markings.
+(function(){'use strict';
+const error=document.getElementById('error');
+if(!window.THREE){error.style.display='grid';document.getElementById('errorText').textContent='All Three.js sources were blocked or unavailable. Disable a script/content blocker for this site, then refresh.';return;}
+const T=window.THREE, scene=new T.Scene();scene.background=new T.Color(0x79a9d1);scene.fog=new T.Fog(0x79a9d1,120,600);
+const camera=new T.PerspectiveCamera(65,innerWidth/innerHeight,.1,1000),renderer=new T.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.outputColorSpace=T.SRGBColorSpace;document.body.appendChild(renderer.domElement);
+scene.add(new T.HemisphereLight(0xddeeff,0x334422,2.2));const sun=new T.DirectionalLight(0xffffff,3);sun.position.set(-100,180,100);sun.castShadow=true;scene.add(sun);
+const mat=c=>new T.MeshStandardMaterial({color:c,roughness:.75});const ground=new T.Mesh(new T.PlaneGeometry(700,700),mat(0x4d8245));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+function box(x,y,z,sx,sy,sz,c,shadow=true){const m=new T.Mesh(new T.BoxGeometry(sx,sy,sz),mat(c));m.position.set(x,y,z);m.castShadow=shadow;m.receiveShadow=shadow;scene.add(m);return m;}
+box(0,.03,-115,330,.06,32,0x30343a,false);box(0,.03,115,330,.06,32,0x30343a,false);box(-115,.03,0,32,.06,230,0x30343a,false);box(115,.03,0,32,.06,230,0x30343a,false);
+[[0,-142,340,3,3],[0,142,340,3,3],[-132,0,3,280,3],[132,0,3,280,3]].forEach(a=>box(a[0],1.5,a[1],a[2],a[4],a[3],0xe7e7e7));
+box(0,.02,0,190,.04,190,0x46783f,false);for(let i=0;i<18;i++){const a=i/18*Math.PI*2,r=98,t=new T.Mesh(new T.CylinderGeometry(1.2,1.6,8,8),mat(0x62452d));t.position.set(Math.cos(a)*r,4,Math.sin(a)*r);t.castShadow=true;const c=new T.Mesh(new T.ConeGeometry(6,13,8),mat(0x1d5b32));c.position.y=10;c.castShadow=true;t.add(c);scene.add(t)}
 for(let i=-5;i<5;i++)box(i*5,.08,-99,4,.05,4,i%2?0xffffff:0x151515,false);
-
-// Cars.
-const cars=[
-{name:"Ferrari SF90 Stradale",color:0xe63946,top:340},
-{name:"Lamborghini Revuelto",color:0xf2c94c,top:350},
-{name:"Porsche 911 GT3 RS",color:0xffffff,top:296},
-{name:"McLaren 750S",color:0xff8700,top:332},
-{name:"Nissan GT-R Nismo",color:0xef233c,top:330},
-{name:"Toyota GR Supra",color:0xffb703,top:250}
-];
-let selected=0,car,paused=false,x=0,z=-112,angle=0,speed=0;
-const keys={};
-const paintBody=new THREE.MeshStandardMaterial({color:cars[0].color,metalness:.55,roughness:.28});
-function buildCar(){
- if(car)scene.remove(car);
- const d=cars[selected],g=new THREE.Group();
- const body=new THREE.Mesh(new THREE.BoxGeometry(4,1.05,7.5),new THREE.MeshStandardMaterial({color:d.color,metalness:.7,roughness:.25}));
- body.position.y=1.15;body.castShadow=true;g.add(body);
- const cabin=new THREE.Mesh(new THREE.BoxGeometry(3,1.1,3.2),mat(0x18222b));cabin.position.set(0,2,.2);cabin.castShadow=true;g.add(cabin);
- for(const sx of[-2.05,2.05])for(const sz of[-2.25,2.25]){
-  const w=new THREE.Mesh(new THREE.CylinderGeometry(.78,.78,.4,18),mat(0x111111));w.rotation.z=Math.PI/2;w.position.set(sx,.75,sz);w.castShadow=true;g.add(w);
- }
- car=g;scene.add(car);document.getElementById("carName").textContent=d.name;resetCar();
-}
-function resetCar(){x=0;z=-112;angle=0;speed=0;car.position.set(x,.35,z);car.rotation.y=angle;}
-function blocked(nx,nz){
- const limitX=128,limitZ=138;
- if(Math.abs(nx)>limitX||Math.abs(nz)>limitZ)return true;
- // Inner island is a collision zone.
- if(Math.abs(nx)<96&&Math.abs(nz)<96)return true;
- return false;
-}
-function update(dt){
- if(paused)return;
- const d=cars[selected];
- if(keys.w||keys.ArrowUp)speed+=38*dt;
- if(keys.s||keys.ArrowDown)speed-=70*dt;
- speed*=Math.pow(.985,dt*60);
- speed=Math.max(-25,Math.min(d.top/3.6,speed));
- const steer=(keys.a||keys.ArrowLeft?-1:0)+(keys.d||keys.ArrowRight?1:0);
- angle-=steer*1.9*dt*(.35+Math.min(Math.abs(speed)/35,1));
- const nx=x+Math.sin(angle)*speed*dt,nz=z+Math.cos(angle)*speed*dt;
- if(!blocked(nx,nz)){x=nx;z=nz;}else{speed=0;}
- car.position.set(x,.35,z);car.rotation.y=angle;
- document.getElementById("speed").textContent=Math.round(Math.abs(speed)*3.6);
-}
-function cameraFollow(dt){
- const behind=new THREE.Vector3(Math.sin(angle),0,Math.cos(angle)).multiplyScalar(-18);
- const target=new THREE.Vector3(x+behind.x,8,z+behind.z);
- camera.position.lerp(target,1-Math.pow(.001,dt));
- camera.lookAt(x,1,z);
-}
-function animate(t){
- requestAnimationFrame(animate);
- const dt=Math.min(.033,(t-(animate.last||t))/1000);animate.last=t;
- update(dt);cameraFollow(dt);renderer.render(scene,camera);
-}
-const panel=document.getElementById("panel");
-function openSettings(){paused=true;panel.style.display="grid";}
-function closeSettings(){paused=false;panel.style.display="none";window.focus();}
-document.getElementById("settings").onclick=openSettings;
-document.getElementById("resume").onclick=closeSettings;
-document.getElementById("reset").onclick=resetCar;
-document.getElementById("cars").innerHTML=cars.map((c,i)=>'<button data-i="'+i+'">'+c.name+'</button>').join("");
-document.querySelectorAll("#cars button").forEach(b=>b.onclick=()=>{selected=+b.dataset.i;buildCar();});
-addEventListener("keydown",e=>{keys[e.key]=true;if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();if(e.key.toLowerCase()==="r")resetCar();if(e.key==="Escape"){panel.style.display==="grid"?closeSettings():openSettings();}});
-addEventListener("keyup",e=>keys[e.key]=false);
-addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-buildCar();camera.position.set(0,8,-130);camera.lookAt(0,1,-112);requestAnimationFrame(animate);
+const cars=[{name:'Ferrari SF90 Stradale',color:0xe63946,top:340},{name:'Lamborghini Revuelto',color:0xf2c94c,top:350},{name:'Porsche 911 GT3 RS',color:0xffffff,top:296},{name:'McLaren 750S',color:0xff8700,top:332},{name:'Nissan GT-R Nismo',color:0xef233c,top:330},{name:'Toyota GR Supra',color:0xffb703,top:250}];let selected=0,car,x=0,z=-112,angle=0,speed=0,paused=false;const keys={};
+function buildCar(){if(car)scene.remove(car);const d=cars[selected],g=new T.Group();const body=new T.Mesh(new T.BoxGeometry(4,1.05,7.5),new T.MeshStandardMaterial({color:d.color,metalness:.7,roughness:.25}));body.position.y=1.15;body.castShadow=true;g.add(body);const cabin=new T.Mesh(new T.BoxGeometry(3,1.1,3.2),mat(0x18222b));cabin.position.set(0,2,.2);cabin.castShadow=true;g.add(cabin);for(const sx of[-2.05,2.05])for(const sz of[-2.25,2.25]){const w=new T.Mesh(new T.CylinderGeometry(.78,.78,.4,18),mat(0x111111));w.rotation.z=Math.PI/2;w.position.set(sx,.75,sz);w.castShadow=true;g.add(w)}car=g;scene.add(car);document.getElementById('carName').textContent=d.name;resetCar()}
+function resetCar(){x=0;z=-112;angle=0;speed=0;if(car){car.position.set(x,.35,z);car.rotation.y=angle}}
+function blocked(nx,nz){if(Math.abs(nx)>128||Math.abs(nz)>138)return true;if(Math.abs(nx)<96&&Math.abs(nz)<96)return true;return false}
+function update(dt){if(paused)return;const d=cars[selected];if(keys.w||keys.ArrowUp)speed+=38*dt;if(keys.s||keys.ArrowDown)speed-=70*dt;speed*=Math.pow(.985,dt*60);speed=Math.max(-25,Math.min(d.top/3.6,speed));const steer=(keys.a||keys.ArrowLeft?-1:0)+(keys.d||keys.ArrowRight?1:0);angle-=steer*1.9*dt*(.35+Math.min(Math.abs(speed)/35,1));const nx=x+Math.sin(angle)*speed*dt,nz=z+Math.cos(angle)*speed*dt;if(!blocked(nx,nz)){x=nx;z=nz}else speed=0;car.position.set(x,.35,z);car.rotation.y=angle;document.getElementById('speed').textContent=Math.round(Math.abs(speed)*3.6)}
+function follow(dt){const behind=new T.Vector3(Math.sin(angle),0,Math.cos(angle)).multiplyScalar(-18);const target=new T.Vector3(x+behind.x,8,z+behind.z);camera.position.lerp(target,1-Math.pow(.001,dt));camera.lookAt(x,1,z)}
+function animate(t){requestAnimationFrame(animate);const dt=Math.min(.033,(t-(animate.last||t))/1000);animate.last=t;update(dt);follow(dt);renderer.render(scene,camera)}
+const panel=document.getElementById('panel');function openSettings(){paused=true;panel.style.display='grid'}function closeSettings(){paused=false;panel.style.display='none';window.focus()}
+document.getElementById('settings').onclick=openSettings;document.getElementById('resume').onclick=closeSettings;document.getElementById('reset').onclick=resetCar;document.getElementById('cars').innerHTML=cars.map((c,i)=>'<button data-i="'+i+'">'+c.name+'</button>').join('');document.querySelectorAll('#cars button').forEach(b=>b.onclick=()=>{selected=+b.dataset.i;buildCar()});
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.key.toLowerCase()==='r')resetCar();if(e.key==='Escape')panel.style.display==='grid'?closeSettings():openSettings()});document.addEventListener('keyup',e=>keys[e.key]=false);addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+buildCar();camera.position.set(0,8,-130);camera.lookAt(0,1,-112);animate(0);
 })();
 </script></body></html>
