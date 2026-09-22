@@ -1,0 +1,10 @@
+let traffic=[],people=[];
+export function spawnTraffic(T,scene){
+ const colors=[0xffffff,0x20242a,0x1d5fa7,0xc62b2b,0x6f7378,0xe2b33e,0x2f7547];
+ for(let i=0;i<22;i++){const g=new T.Group(),col=colors[i%colors.length];const b=new T.Mesh(new T.BoxGeometry(1.75,.48,3.8),new T.MeshStandardMaterial({color:col,metalness:.3,roughness:.4}));b.position.y=.55;g.add(b);const c=new T.Mesh(new T.BoxGeometry(1.48,.5,1.6),new T.MeshStandardMaterial({color:0x26343c,roughness:.2}));c.position.set(0,.9,-.1);g.add(c);for(const x of[-.78,.78])for(const z of[-1.2,1.2]){const w=new T.Mesh(new T.CylinderGeometry(.27,.27,.16,10),new T.MeshStandardMaterial({color:0x111111}));w.rotation.z=Math.PI/2;w.position.set(x,.35,z);g.add(w)}const z=-330+(i%8)*95;g.position.set([-360,-270,-180,-90,90,180,270,360][i%8],.35,z);scene.add(g);traffic.push({g,start:g.position.clone(),speed:7+i%6,dir:i%2?1:-1})}
+ for(let i=0;i<80;i++){const g=new T.Group(),shirt=[0x2d5da8,0xb44b3b,0x3f7b4f,0xc28b45,0x6b5690,0xe9e1d2][i%6];const body=new T.Mesh(new T.BoxGeometry(.32,.7,.22),new T.MeshStandardMaterial({color:shirt}));body.position.y=.7;g.add(body);const head=new T.Mesh(new T.SphereGeometry(.16,8,6),new T.MeshStandardMaterial({color:0xc78e68}));head.position.y=1.18;g.add(head);for(const x of[-.09,.09]){const l=new T.Mesh(new T.BoxGeometry(.09,.45,.1),new T.MeshStandardMaterial({color:0x22252a}));l.position.set(x,.27,0);g.add(l)}g.position.set(-350+(i*43)%700,0,-350+(i*67)%700);scene.add(g);people.push({g,axis:i%2?'x':'z',phase:i*2,speed:.5+(i%5)*.15,dir:i%2?1:-1})}
+}
+export function updateTraffic(dt){
+ for(const n of traffic){n.start.z+=dt*n.speed*n.dir;n.g.position.z=n.start.z;if(n.g.position.z>380)n.g.position.z=-380;if(n.g.position.z<-380)n.g.position.z=380}
+ for(const p of people){p.phase+=dt*p.speed*p.dir;if(p.axis==='x')p.g.position.x+=dt*p.speed*p.dir;else p.g.position.z+=dt*p.speed*p.dir;if(p.g.position.x>380)p.g.position.x=-380;if(p.g.position.x<-380)p.g.position.x=380;if(p.g.position.z>380)p.g.position.z=-380;if(p.g.position.z<-380)p.g.position.z=380;p.g.position.y=Math.abs(Math.sin(p.phase*3))*.02}
+}
