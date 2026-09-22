@@ -122,13 +122,15 @@ function update(dt){
  if(reverse&&velocity<=1) velocity -= 24*dt;
  velocity=Math.max(-24,Math.min(max,velocity));
  const steerInput=(keys.a||keys.ArrowLeft?-1:0)+(keys.d||keys.ArrowRight?1:0);
- const steerLimit=Math.max(.28,1-Math.abs(velocity)/max*.42);
+ const speedAbs=Math.abs(velocity);
+ const speedFactor=Math.min(1,speedAbs/18);
+ const steerLimit=.9-.3*speedFactor;
  const targetSteer=steerInput*steerLimit;
- steer += (targetSteer-steer)*Math.min(1,dt*7);
- const speedFactor=Math.min(1,Math.abs(velocity)/12);
- const wheelAngle=steer*(.55+.45*speedFactor);
- steerAngle += (wheelAngle-steerAngle)*Math.min(1,dt*10);
- rot += steerAngle*(0.42+Math.min(Math.abs(velocity)/max,.9)*.35)*dt*(velocity>=0?1:-1);
+ steer+=(targetSteer-steer)*Math.min(1,dt*11);
+ const wheelAngle=steer*(.72+.28*speedFactor);
+ steerAngle+=(wheelAngle-steerAngle)*Math.min(1,dt*14);
+ const yawRate=(.72+speedFactor*.9)*(.35+Math.min(speedAbs/30,1)*.65);
+ rot+=steerAngle*yawRate*dt*(velocity>=0?1:-1);
  const nx=px+Math.sin(rot)*velocity*dt,nz=pz+Math.cos(rot)*velocity*dt;
  if(Math.abs(nx)<17.15&&nz>-170&&nz<170){px=nx;pz=nz}else{velocity*=.35;steer*=.5}
  speed=velocity;
