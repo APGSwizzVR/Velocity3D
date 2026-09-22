@@ -37,7 +37,7 @@ const cars=[
 ['Nissan GT-R Nismo','#e52b2b',330],['Toyota GR Supra','#ffd23f',250]
 ];
 let selected=0,keys={},paused=false,last=performance.now(),speed=0,steer=0,px=0,pz=70,rot=0;
-let throttle=0,brake=0,velocity=0,steerAngle=0;
+let throttle=0,brake=0,velocity=0,steerAngle=0,vx=0,vz=0;
 function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s}
 const vs=shader(gl.VERTEX_SHADER,'attribute vec3 p;attribute vec3 c;uniform mat4 mvp;varying vec3 v;void main(){gl_Position=mvp*vec4(p,1.0);v=c;}');
 const fs=shader(gl.FRAGMENT_SHADER,'precision mediump float;varying vec3 v;void main(){gl_FragColor=vec4(v,1.0);}');
@@ -108,31 +108,75 @@ function draw(){
  for(let i=0;i<carV.length/3;i++){const x=carV[i*3],y=carV[i*3+1],z=carV[i*3+2];cv[i*3]=x*cs-z*sn+px;cv[i*3+1]=y;cv[i*3+2]=z*cs+x*sn+pz}
  gl.bindBuffer(gl.ARRAY_BUFFER,carBuf);gl.bufferSubData(gl.ARRAY_BUFFER,0,cv);gl.vertexAttribPointer(ap,3,gl.FLOAT,false,0,0);gl.vertexAttribPointer(ac,3,gl.FLOAT,false,0,carV.length*4);gl.drawArrays(gl.TRIANGLES,0,carV.length/3);
 }
-function reset(){px=0;pz=70;rot=0;speed=0;velocity=0;steer=0;steerAngle=0}
+function reset(){px=0;pz=70;rot=0;speed=0;velocity=0;vx=0;vz=0;steer=0;steerAngle=0}
 function update(dt){
  if(paused)return;
  const max=cars[selected][2]/3.6;
- const forward=keys.w||keys.ArrowUp,reverse=keys.s||keys.ArrowDown;
- throttle += ((forward?1:0)-throttle)*Math.min(1,dt*6);
- brake += ((reverse?1:0)-brake)*Math.min(1,dt*10);
- if(forward) velocity += (max*.72)*dt;
- else if(reverse && velocity>1) velocity -= 34*dt;
- else velocity *= Math.pow(.992,dt*60);
- if(!forward&&!reverse) velocity *= Math.pow(.996,dt*60);
- if(reverse&&velocity<=1) velocity -= 24*dt;
+ const forward=keys.w||keys.ArrowUp;
+ const reverse=keys.s||keys.ArrowDown;
+ const left=keys.a||keys.ArrowLeft;
+ const right=keys.d||keys.ArrowRight;
+ const steerInput=(left?-1:0)+(right?1:0);
+
+ const fx=Math.sin(rot), fz=Math.cos(rot);
+ const rx=Math.cos(rot), rz=-Math.sin(rot);
+ const forwardSpeed=vx*fx+vz*fz;
+ const lateralSpeed=vx*rx+vz*rz;
+
+ let throttleTarget=forward?1:0;
+ let brakeTarget=reverse&&forwardSpeed>0?1:0;
+ if(reverse&&forwardSpeed<=0) throttleTarget=-1;
+
+ throttle+=(throttleTarget-throttle)*Math.min(1,dt*9);
+ brake+=(brakeTarget-brake)*Math.min(1,dt*14);
+
+ if(throttleTarget>0) velocity+=max*1.05*throttle*dt;
+ else if(throttleTarget<0) velocity-=max*.55*Math.abs(throttle)*dt;
+ else velocity*=Math.pow(.985,dt*60);
+
+ if(brake>0) velocity*=Math.pow(.82,brake*dt*60);
  velocity=Math.max(-24,Math.min(max,velocity));
- const steerInput=(keys.a||keys.ArrowLeft?-1:0)+(keys.d||keys.ArrowRight?1:0);
- const speedAbs=Math.abs(velocity);
- const speedFactor=Math.min(1,speedAbs/18);
- const steerLimit=.9-.3*speedFactor;
- const targetSteer=steerInput*steerLimit;
- steer+=(targetSteer-steer)*Math.min(1,dt*11);
- const wheelAngle=steer*(.72+.28*speedFactor);
- steerAngle+=(wheelAngle-steerAngle)*Math.min(1,dt*14);
- const yawRate=(.72+speedFactor*.9)*(.35+Math.min(speedAbs/30,1)*.65);
- rot+=steerAngle*yawRate*dt*(velocity>=0?1:-1);
- const nx=px+Math.sin(rot)*velocity*dt,nz=pz+Math.cos(rot)*velocity*dt;
- if(Math.abs(nx)<17.15&&nz>-170&&nz<170){px=nx;pz=nz}else{velocity*=.35;steer*=.5}
+
+ const speedAbs=Math.abs(forwardSpeed);
+ const speed01=Math.min(1,speedAbs/28);
+ const steerMax=.58-.34*speed01;
+ const targetSteer=steerInput*steerMax;
+ steer+=(targetSteer-steer)*Math.min(1,dt*18);
+ steerAngle+=(steer-steerAngle)*Math.min(1,dt*20);
+
+ const wheelBase=2.7;
+ const yawRate=Math.abs(forwardSpeed)>0.5
+   ? (forwardSpeed/wheelBase)*Math.tan(steerAngle)
+   : 0;
+ rot+=yawRate*dt;
+
+ const newFx=Math.sin(rot),newFz=Math.cos(rot);
+ const newRx=Math.cos(rot),newRz=-Math.sin(rot);
+
+ let targetForward=velocity;
+ if(Math.abs(targetForward)<.15) targetForward=0;
+
+ let targetVx=newFx*targetForward;
+ let targetVz=newFz*targetForward;
+
+ const grip=1-Math.min(.96,dt*(8.5+speed01*5));
+ vx=targetVx+(vx-targetVx)*grip;
+ vz=targetVz+(vz-targetVz)*grip;
+
+ if(Math.abs(steerInput)<.01){
+   vx*=Math.pow(.985,dt*60);
+   vz*=Math.pow(.985,dt*60);
+ }
+
+ const nx=px+vx*dt;
+ const nz=pz+vz*dt;
+ if(Math.abs(nx)<17.15&&nz>-170&&nz<170){
+   px=nx;pz=nz;
+ }else{
+   vx*=.15;vz*=.15;velocity*=.35;steer*=.35;steerAngle*=.35;
+ }
+
+ velocity=vx*newFx+vz*newFz;
  speed=velocity;
  document.getElementById('speed').textContent=Math.round(Math.abs(speed)*3.6);
  draw();
