@@ -117,66 +117,55 @@ function update(dt){
  const left=keys.a||keys.ArrowLeft;
  const right=keys.d||keys.ArrowRight;
  const steerInput=(left?-1:0)+(right?1:0);
+ const fx=Math.sin(rot),fz=Math.cos(rot);
+ const rx=Math.cos(rot),rz=-Math.sin(rot);
+ let forwardSpeed=vx*fx+vz*fz;
+ let lateralSpeed=vx*rx+vz*rz;
 
- const fx=Math.sin(rot), fz=Math.cos(rot);
- const rx=Math.cos(rot), rz=-Math.sin(rot);
- const forwardSpeed=vx*fx+vz*fz;
- const lateralSpeed=vx*rx+vz*rz;
+ const throttleTarget=forward?1:(reverse&&forwardSpeed<=0?-1:0);
+ const brakeTarget=reverse&&forwardSpeed>0?1:0;
+ throttle+=(throttleTarget-throttle)*Math.min(1,dt*10);
+ brake+=(brakeTarget-brake)*Math.min(1,dt*20);
 
- let throttleTarget=forward?1:0;
- let brakeTarget=reverse&&forwardSpeed>0?1:0;
- if(reverse&&forwardSpeed<=0) throttleTarget=-1;
+ if(throttle>0) forwardSpeed+=max*.95*throttle*dt;
+ else if(throttle<0) forwardSpeed+=max*.50*throttle*dt;
+ else forwardSpeed*=Math.pow(.985,dt*60);
 
- throttle+=(throttleTarget-throttle)*Math.min(1,dt*9);
- brake+=(brakeTarget-brake)*Math.min(1,dt*14);
-
- if(throttleTarget>0) velocity+=max*1.05*throttle*dt;
- else if(throttleTarget<0) velocity-=max*.55*Math.abs(throttle)*dt;
- else velocity*=Math.pow(.985,dt*60);
-
- if(brake>0) velocity*=Math.pow(.82,brake*dt*60);
- velocity=Math.max(-24,Math.min(max,velocity));
+ if(brake>0){
+   const force=(32+Math.abs(forwardSpeed)*1.1)*brake;
+   if(Math.abs(forwardSpeed)<=force*dt) forwardSpeed=0;
+   else forwardSpeed-=Math.sign(forwardSpeed)*force*dt;
+ }
+ forwardSpeed=Math.max(-24,Math.min(max,forwardSpeed));
 
  const speedAbs=Math.abs(forwardSpeed);
- const speed01=Math.min(1,speedAbs/28);
- const steerMax=.58-.34*speed01;
+ const speed01=Math.min(1,speedAbs/42);
+ const steerMax=.70-.28*speed01;
  const targetSteer=steerInput*steerMax;
  steer+=(targetSteer-steer)*Math.min(1,dt*18);
- steerAngle+=(steer-steerAngle)*Math.min(1,dt*20);
+ steerAngle+=(steer-steerAngle)*Math.min(1,dt*24);
 
  const wheelBase=2.7;
- const yawRate=Math.abs(forwardSpeed)>0.5
-   ? (forwardSpeed/wheelBase)*Math.tan(steerAngle)
-   : 0;
+ const yawRate=speedAbs>.25?(forwardSpeed/wheelBase)*Math.tan(steerAngle):0;
  rot+=yawRate*dt;
 
- const newFx=Math.sin(rot),newFz=Math.cos(rot);
- const newRx=Math.cos(rot),newRz=-Math.sin(rot);
+ const grip=17.0-4.0*speed01;
+ lateralSpeed*=Math.exp(-grip*dt);
+ if(Math.abs(steerInput)>0.01&&speedAbs>2) lateralSpeed-=steerInput*speedAbs*.065*dt;
 
- let targetForward=velocity;
- if(Math.abs(targetForward)<.15) targetForward=0;
+ const nfx=Math.sin(rot),nfz=Math.cos(rot);
+ const nrx=Math.cos(rot),nrz=-Math.sin(rot);
+ vx=nfx*forwardSpeed+nrx*lateralSpeed;
+ vz=nfz*forwardSpeed+nrz*lateralSpeed;
 
- let targetVx=newFx*targetForward;
- let targetVz=newFz*targetForward;
-
- const grip=1-Math.min(.96,dt*(8.5+speed01*5));
- vx=targetVx+(vx-targetVx)*grip;
- vz=targetVz+(vz-targetVz)*grip;
-
- if(Math.abs(steerInput)<.01){
-   vx*=Math.pow(.985,dt*60);
-   vz*=Math.pow(.985,dt*60);
+ const nx=px+vx*dt,nz=pz+vz*dt;
+ if(Math.abs(nx)<17.15&&nz>-170&&nz<170){px=nx;pz=nz;}
+ else{
+   vx*=.05;vz*=.05;forwardSpeed*=.05;lateralSpeed*=.05;
+   velocity=0;steer*=.45;steerAngle*=.45;
  }
 
- const nx=px+vx*dt;
- const nz=pz+vz*dt;
- if(Math.abs(nx)<17.15&&nz>-170&&nz<170){
-   px=nx;pz=nz;
- }else{
-   vx*=.15;vz*=.15;velocity*=.35;steer*=.35;steerAngle*=.35;
- }
-
- velocity=vx*newFx+vz*newFz;
+ velocity=vx*Math.sin(rot)+vz*Math.cos(rot);
  speed=velocity;
  document.getElementById('speed').textContent=Math.round(Math.abs(speed)*3.6);
  draw();
