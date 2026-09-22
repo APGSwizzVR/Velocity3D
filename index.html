@@ -5,24 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Velocity 3D</title>
 <style>
-:root{--glass:rgba(12,16,22,.72);--line:rgba(255,255,255,.12);--text:#f5f7fa;--muted:#9ca7b5;--accent:#ff4d2e}
-*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#080b10;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
-canvas{display:block;width:100%;height:100%}
-#hud{position:fixed;inset:0;pointer-events:none}.top{position:absolute;top:18px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:center}
-.brand{font-weight:900;letter-spacing:.12em;font-size:14px;text-shadow:0 2px 12px #000}.brand span{color:var(--accent)}
-.pill{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(18px);border-radius:14px;padding:9px 13px;color:var(--muted);font-size:12px}
-.speed{position:absolute;right:24px;bottom:24px;text-align:right}.speed b{display:block;font-size:64px;line-height:.9;letter-spacing:-.06em}.speed small{color:var(--muted);font-size:11px;letter-spacing:.18em}
-.status{position:absolute;left:24px;bottom:24px;display:flex;gap:8px;flex-wrap:wrap}
-#menu{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,rgba(4,7,11,.3),rgba(4,7,11,.82));pointer-events:auto}
-.panel{width:min(940px,calc(100% - 30px));max-height:calc(100% - 30px);overflow:auto;background:rgba(10,14,20,.82);border:1px solid var(--line);border-radius:28px;backdrop-filter:blur(30px);box-shadow:0 30px 90px #0008;padding:28px}
-h1{margin:0;font-size:42px;letter-spacing:-.05em}.sub{color:var(--muted);margin:7px 0 24px}.grid{display:grid;grid-template-columns:1.3fr .9fr;gap:22px}.cars{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.card{border:1px solid var(--line);background:#ffffff05;border-radius:18px;padding:15px;cursor:pointer;transition:.2s}.card:hover,.card.sel{border-color:#fff5;background:#fff0}
-.carview{height:115px;border-radius:13px;margin-bottom:12px;position:relative;overflow:hidden;background:linear-gradient(145deg,#171d27,#0d1118)}
-.carshape{position:absolute;left:18%;right:18%;top:38%;height:31%;border-radius:40% 45% 18% 18%;transform:skewX(-8deg);box-shadow:0 16px 22px #0008}.carshape:before{content:"";position:absolute;left:18%;right:20%;top:-45%;height:75%;background:#121a22;border-radius:55% 55% 15% 15%;border:1px solid #ffffff22}.wheel{position:absolute;bottom:-8px;width:24px;height:24px;border-radius:50%;background:#050608;border:5px solid #202631}.w1{left:18%}.w2{right:18%}
-label{display:block;color:var(--muted);font-size:12px;margin:15px 0 7px}input[type=color]{width:100%;height:42px;border:1px solid var(--line);background:#111;border-radius:12px;padding:3px}select,input[type=range]{width:100%}select{background:#111820;color:#fff;border:1px solid var(--line);padding:11px;border-radius:11px}input[type=range]{accent-color:var(--accent)}
-.btn{border:0;border-radius:13px;padding:13px 18px;font-weight:800;cursor:pointer;background:#fff;color:#0b0e12}.btn.red{background:var(--accent);color:white}.actions{display:flex;gap:10px;margin-top:20px}.help{font-size:11px;color:var(--muted);line-height:1.7}
-@media(max-width:760px){.grid{grid-template-columns:1fr}.cars{grid-template-columns:1fr 1fr}h1{font-size:32px}.panel{padding:20px}.speed b{font-size:46px}}
-</style>
+:root{--accent:#0071e3;--muted:#6e6e73}*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#f5f5f7;color:#111;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",sans-serif}canvas{display:block;width:100%;height:100%}#hud{position:fixed;inset:0;pointer-events:none}.top{position:absolute;top:18px;left:22px;right:22px;display:flex;justify-content:space-between;align-items:center}.brand{font-weight:800;letter-spacing:-.035em;font-size:16px;color:#fff;text-shadow:0 2px 16px #000}.brand span{opacity:.65}.pill{background:rgba(255,255,255,.76);border:1px solid rgba(255,255,255,.38);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);border-radius:999px;padding:9px 13px;color:#222;font-size:12px;box-shadow:0 8px 30px rgba(0,0,0,.1)}.speed{position:absolute;right:25px;bottom:25px;text-align:right;color:#fff;text-shadow:0 3px 20px #000}.speed b{display:block;font-size:70px;line-height:.85;letter-spacing:-.07em;font-weight:700}.speed small{font-size:11px;letter-spacing:.18em}.status{position:absolute;left:24px;bottom:24px;display:flex;gap:8px;flex-wrap:wrap}#menu{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,rgba(0,0,0,.04),rgba(0,0,0,.3));pointer-events:auto;padding:18px}.panel{width:min(1080px,100%);max-height:calc(100% - 20px);overflow:auto;background:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.7);border-radius:30px;backdrop-filter:blur(38px) saturate(180%);-webkit-backdrop-filter:blur(38px) saturate(180%);box-shadow:0 24px 70px rgba(0,0,0,.16);padding:34px}.hero{margin-bottom:26px}.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:7px}h1{margin:0;font-size:52px;line-height:.95;letter-spacing:-.065em;font-weight:700}.sub{color:var(--muted);margin:10px 0 0;font-size:15px}.grid{display:grid;grid-template-columns:1.45fr .85fr;gap:26px}.sectionTitle{font-size:13px;font-weight:700;margin-bottom:11px}.cars{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{border:1px solid rgba(0,0,0,.09);background:rgba(255,255,255,.62);border-radius:20px;padding:11px;cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s}.card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.08)}.card.sel{border-color:rgba(0,113,227,.55);box-shadow:0 0 0 3px rgba(0,113,227,.12)}.carview{height:125px;border-radius:15px;margin-bottom:12px;position:relative;overflow:hidden;background:linear-gradient(145deg,#dfe3e8,#b8bec7)}.carshape{position:absolute;left:18%;right:18%;top:40%;height:30%;border-radius:40% 45% 18% 18%;transform:skewX(-8deg);box-shadow:0 18px 25px #0003}.carshape:before{content:"";position:absolute;left:18%;right:20%;top:-45%;height:75%;background:#17202b;border-radius:55% 55% 15% 15%;border:1px solid #ffffff66}.wheel{position:absolute;bottom:-8px;width:24px;height:24px;border-radius:50%;background:#090a0c;border:5px solid #222}.w1{left:18%}.w2{right:18%}.specs{display:flex;gap:7px;margin-top:9px}.spec{background:#f1f1f3;border-radius:8px;padding:5px 7px;font-size:10px;color:#555}label{display:flex;justify-content:space-between;color:#6e6e73;font-size:12px;font-weight:600;margin:17px 0 7px}input[type=color]{width:100%;height:44px;border:1px solid rgba(0,0,0,.09);background:#fff;border-radius:13px;padding:3px}select,input[type=range]{width:100%}select{appearance:none;background:rgba(255,255,255,.72);color:#111;border:1px solid rgba(0,0,0,.09);padding:12px;border-radius:13px;font-size:13px}input[type=range]{accent-color:var(--accent)}.btn{border:0;border-radius:14px;padding:14px 20px;font-weight:700;font-size:14px;cursor:pointer;background:#111;color:#fff;transition:transform .15s}.btn:hover{transform:scale(1.015)}.btn.red{background:var(--accent)}.actions{display:flex;gap:9px;margin-top:22px}.help{font-size:11px;color:#8a8a8f;line-height:1.65}.driveHint{font-size:11px;color:#6e6e73;margin-top:10px}@media(max-width:760px){.grid{grid-template-columns:1fr}.cars{grid-template-columns:1fr 1fr}h1{font-size:40px}.panel{padding:22px}.speed b{font-size:48px}}</style>
 </head>
 <body>
 <div id="hud">
@@ -32,16 +15,16 @@ label{display:block;color:var(--muted);font-size:12px;margin:15px 0 7px}input[ty
 </div>
 <div id="menu">
  <div class="panel">
-  <h1>VELOCITY 3D</h1><div class="sub">A high-speed browser racing prototype. Pick a car, tune it, then drive.</div>
+  <div class="hero"><div class="eyebrow">Browser Racing</div><h1>VELOCITY 3D</h1><div class="sub">Drive a high-performance car through a cinematic 3D circuit.</div></div>
   <div class="grid">
-   <section><label>CAR</label><div class="cars" id="cars"></div><div class="help">Each car has a different mass, grip and power curve.</div></section>
+   <section><div class="sectionTitle">Choose your car</div><div class="cars" id="cars"></div><div class="help">Different power, weight and grip characteristics.</div></section>
    <section>
     <label>PAINT</label><input id="paint" type="color" value="#ff4d2e">
     <label>WHEEL FINISH</label><select id="wheel"><option value="#101318">Graphite</option><option value="#d9dde3">Machined</option><option value="#151515">Black</option></select>
     <label>AERO / DOWNFORCE <span id="aerov">50%</span></label><input id="aero" type="range" min="0" max="100" value="50">
     <label>TRACTION CONTROL</label><select id="tc"><option value="on">ON</option><option value="off">OFF</option></select>
     <div class="actions"><button class="btn red" id="drive">DRIVE</button><button class="btn" id="close">CLOSE</button></div>
-    <p class="help">Real-time 3D lighting, procedural scenery, road curvature, suspension animation, tire smoke, brake lights and a chase camera are generated in the browser.</p>
+    <p class="help">Real-time 3D lighting, procedural scenery, shadows and a cinematic chase camera run directly in your browser.</p><div class="driveHint">Click Drive, then use WASD or the arrow keys.</div>
    </section>
   </div>
  </div>
@@ -191,9 +174,9 @@ renderCars();
 document.getElementById('paint').oninput=e=>{cars[selected].color=e.target.value;makeCar(cars[selected]);renderCars()};
 document.getElementById('wheel').onchange=()=>makeCar(cars[selected]);
 document.getElementById('aero').oninput=e=>document.getElementById('aerov').textContent=e.target.value+'%';
-document.getElementById('drive').onclick=()=>{running=true;document.getElementById('menu').style.display='none';last=performance.now();requestAnimationFrame(animate)};
+function startGame(){if(running)return;running=true;document.getElementById('menu').style.display='none';last=performance.now();requestAnimationFrame(animate);}document.getElementById('drive').addEventListener('click',startGame);document.getElementById('drive').addEventListener('pointerdown',startGame);
 document.getElementById('close').onclick=()=>document.getElementById('menu').style.display='none';
-addEventListener('keydown',e=>{keys[e.key]=true;if(e.key.toLowerCase()==='r'){setCar(progress,0);velocity=0}if(e.key==='Escape'){document.getElementById('menu').style.display='grid';running=false}});
+addEventListener('keydown',e=>{keys[e.key]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.key.toLowerCase()==='r'){setCar(progress,0);velocity=0}if(e.key==='Escape'){document.getElementById('menu').style.display='grid';running=false}});
 addEventListener('keyup',e=>keys[e.key]=false);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
